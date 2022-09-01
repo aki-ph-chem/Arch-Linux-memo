@@ -1,0 +1,505 @@
+\documentclass[dvipdfmx]{jsarticle}
+\begin{document}
+
+\title{Arch Linux インストールガイド}
+\author{aki}
+\maketitle
+
+\section{はじめに}
+
+Arch Linuxのuefiの場合におけるイントール方法をまとめておく。
+UEFIで起動しているのか、BIOSで起動しているかを確認するためには以下のコマンドを実行して正常に表示されるならばUEFIでブートしている。
+
+\begin{quote}
+\begin{verbatim}
+
+# ls /sys/firmware/efi/efivars
+
+\end{verbatim}
+\end{quote}
+
+\section{パーテーション}
+
+UEFI環境でインストールするには、gdiskコマンドでパーテショニングを行う。
+
+\subsection{パーテーションの設計について}
+
+
+パーテーションの設計では以下のように、ざっくりとした設計としっかりした設計がある。
+
+一時的にインストールする場合ではざっくりとでも良いが、継続して運用する場合ではしっかりと設計するべきである。
+
+\subsubsection{ざっくりとした設計}
+
+1) /boot 
+
+ブートローダーをインストールするための領域 200 から300 MBあればよい。
+
+2) その他 
+
+\subsubsection{しっかりと設計する場合}
+
+1) /boot 
+
+ブートローダーをインストールするための領域 200 から300 MBあればよい。
+
+2) /var 
+
+pacman のキャッシュ等を格納する　8-12 GBあればよい
+
+3) /
+
+基本的なパーテーション15-20 GB
+
+4) /home
+
+ユーザーのデータが格納される　一番多く割り振っておくのが良い。
+
+5) swap
+
+RAMが2 GB以上あるならばないほうがいいらしい。
+
+\subsection{パーテーションの作成}
+
+\begin{quote}
+\begin{verbatim}
+
+# gdisk /dev/sda
+# command (m for help): n
+
+\end{verbatim}
+\end{quote}
+
+1stセクターでは何も入力せずにEnterを押す、2ndセクターでは+\<設定したい容量\>(MB,GB)としてEnterを押す。
+
+
+hexcodeはUEFIブート用ならばef00として、swap用ならば8200でその他のパーテーションでは何も入力セずにEnterを押す。
+
+
+
+すでにあるパーテーションを削除して新たなパーテーションを作る場合では
+
+\begin{quote}
+\begin{verbatim}
+
+# gdisk /dev/sda
+# command (m for help): o
+
+\end{verbatim}
+\end{quote}
+
+としてからnとして新たなパーテーションを作成する。
+
+
+すでに存在するパーテーションを確認するには
+
+\begin{quote}
+\begin{verbatim}
+
+# gdisk -l /dev/sda
+
+\end{verbatim}
+\end{quote}
+
+とする。
+
+
+\section{フォーマットとマウント}
+
+ディスクのパーテーションを作成しただけでは、ファイルシステムは何を
+使うのか、そのパーテーションをどこにマウントするのか等がまだ定まっていないためフォーマット\&マウントを行うことが必要である。
+
+\subsection{フォーマット}
+
+1) /boot
+
+/bootパーテーションをフォーマットするには
+
+
+\begin{quote}
+\begin{verbatim}
+
+# mkfs.vfat -F32 /dev/sda1
+
+\end{verbatim}
+\end{quote}
+
+としてvfatでフォーマットする。
+
+2) その他のパーテーション
+
+色々なファイルシステムがあるが、一般的なものとしてはext4がある。
+ここでは、 ext4にフォーマットする場合を示す。
+
+\begin{quote}
+\begin{verbatim}
+
+# mkfs.ext4 /dev/sda2
+
+\end{verbatim}
+\end{quote}
+
+\subsection{マウント}
+
+ここでは、しっかりとしたパーテーション設計をした場合でのマウントを示す。
+
+\begin{quote}
+\begin{verbatim}
+
+# mount /dev/sda3 /mnt　#rootをマウント
+# mkdir /mnt/var
+# mount /dev/sda4 /mnt/var
+# mkdir /mnt/home
+# mount /dev/sda5 /mnt/home
+# mkdir /mnt/boot
+# mount /dev/sda1 /mnt/boot
+
+\end{verbatim}
+\end{quote}
+
+\section{基本的なインストール}
+
+まずはデスクトップ環境以外の基本的な環境を構築する。
+
+\subsection{最低限のパッケージのインストール}
+
+まずpacstrapで以下のパッケージをインストールする。
+
+\begin{quote}
+\begin{verbatim}
+
+# pacstrap /mnt base base-devel linux linux-firmware vim dhcpcd
+
+\end{verbatim}
+\end{quote}
+
+次にfstabファイルを生成する。
+
+\begin{quote}
+\begin{verbatim}
+
+# genfstab -U /mnt >>  /mnt/etc/fstab
+# cat /mnt/etc/fstab  # 確認
+
+\end{verbatim}
+\end{quote}
+
+次にchrootによって/mnt以下をrootユーザーで操作する
+
+\begin{quote}
+\begin{verbatim}
+
+# arch-chroot /mnt
+
+\end{verbatim}
+\end{quote}
+
+\subsubsection{タイムゾーン、とロケール}
+
+タイムゾーンを日本の東京に設定する。
+
+\begin{quote}
+\begin{verbatim}
+
+# ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime  #時間の設定
+
+# hwclock --systohc  # ハードウェアクロックの設定
+
+\end{verbatim}
+\end{quote}
+
+ロケールの設定では、/etc/locale.genを編集する
+
+\begin{quote}
+\begin{verbatim}
+
+# locale-gen # ロケールファイルを生成
+
+# vim /etc/locale.gen # en_US.UTF-8 UTF-8をアンコメント
+
+\end{verbatim}
+\end{quote}
+
+
+次に言語の環境変数を設定するファイルを生成
+
+\begin{quote}
+\begin{verbatim}
+
+# echo LANG=en_US.UTF-8 >  /etc/locale.conf
+
+\end{verbatim}
+\end{quote}
+
+\subsubsection{ネットワーク}
+
+まずhost名を設定する。
+
+\begin{quote}
+\begin{verbatim}
+
+# echo (hostname) >  /etc/hostname
+
+\end{verbatim}
+\end{quote}
+
+次に /etc/hostsに
+
+\begin{quote}
+\begin{verbatim}
+
+127.0.0.1 localhost
+::1       localhost
+127.0.1.1 (hostname).localdomain (hostname)
+
+\end{verbatim}
+\end{quote}
+
+と書き込む。
+
+最後に、dhcpcdのデーモンを起動しておく
+
+\begin{quote}
+\begin{verbatim}
+
+# systemctl enable dhcpcd.service
+
+\end{verbatim}
+\end{quote}
+
+\subsubsection{Rootパスワード}
+
+passwdコマンドでrootユーザーのパスワードを設定する。
+
+\begin{quote}
+\begin{verbatim}
+
+#  passwd 
+
+\end{verbatim}
+\end{quote}
+
+
+\subsubsection{ブートローダー}
+
+ブートローダーの前にプロセッサのマイクロコードをインストール
+
+\begin{quote}
+\begin{verbatim}
+
+# pacman -S intel-ucode 
+
+\end{verbatim}
+\end{quote}
+
+次にgrubをインストール。
+
+\begin{quote}
+\begin{verbatim}
+
+# pacman -S grub
+
+\end{verbatim}
+\end{quote}
+
+最後に grubの設定を行う。
+
+\begin{quote}
+\begin{verbatim}
+
+# grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=grub
+# grub-mkconfig -o /boot/grub/grub.cfg
+
+\end{verbatim}
+\end{quote}
+
+ここまでで基本的なインストールは終了となる。
+これより先の操作に進むために一旦再起動を行う。
+
+\subsubsection{再起動}
+
+再起動を行う前にexitでchrootから抜けて、安全にシャットダウンするためにマウントしているパーテーションをアンマウントしておく。
+ここでumountのRオプションは再帰的なアンマウントを意味する。
+
+\begin{quote}
+\begin{verbatim}
+
+# exit  
+# umount -R /mnt
+# reboot
+
+\end{verbatim}
+\end{quote}
+
+\subsubsection{一般ユーザーの追加}
+
+今のままではrootユーザーのみで危険なので一般ユーザーを作成する
+
+\begin{quote}
+\begin{verbatim}
+
+useradd -m (user_name)
+passwd (user_name)
+
+\end{verbatim}
+\end{quote}
+
+次にsudoを使えるように以下の操作を行う。
+まず、
+
+\begin{quote}
+\begin{verbatim}
+
+pacman -S sudo
+
+\end{verbatim}
+\end{quote}
+
+sudoをインストールし、/etc/sudoersに
+
+\begin{quote}
+\begin{verbatim}
+
+(user_name) ALL=(ALL) ALL
+
+\end{verbatim}
+\end{quote}
+
+を追記する。
+
+\section{ディスクトップ環境の構築(Xfce4)}
+
+ここからはディスクトップ環境を構築していく。
+
+\subsection{ディスプレイマネージャー}
+
+ディスプレイマネージャーであるlightdm及びGreeterをインストールする。
+
+\begin{quote}
+\begin{verbatim}
+
+pacman -S lightdm lightdm-gtk-greeter
+ls -l /usr/share/xgreeters/
+
+\end{verbatim}
+\end{quote}
+
+として正常に表示されれば無事インストールされている。
+
+次に設定ファイル/etc/lightdm/lightdm.conf を次のように編集する。
+
+\begin{quote}
+\begin{verbatim}
+
+~
+[Seat:*]
+greeter-session=example-gtk-gnome　
+↓
+greeter-session=lightdm-gtk-greeter　
+
+\end{verbatim}
+\end{quote}
+
+
+最後にlightdmデーモンを有効化する。
+
+\begin{quote}
+\begin{verbatim}
+
+systemctl enable lightdm.service
+
+\end{verbatim}
+\end{quote}
+
+\subsection{ディスプレイサーバー}
+
+物理マシンにインストールする場合にはビデオドライバーをインストールする。
+
+
+代表的なディスプレイサーバーであるXサーバーをインストールする。
+
+\begin{quote}
+\begin{verbatim}
+
+pacman -S xorg-server xorg-apps
+
+\end{verbatim}
+\end{quote}
+
+\subsection{ディスクトップ環境をインストールする}
+
+xfceディストップをインストールする場合は
+
+\begin{quote}
+\begin{verbatim}
+
+pacman -S xfce4 xfce4-goodies 
+
+\end{verbatim}
+\end{quote}
+とする。
+
+\section{日本語入力}
+
+このままでは、日本語入力を行うことができないので、以下の手段を踏んで
+日本語入力設定を行う。
+ここでは、日本語入力システムとしてはgoogle日本語入力のOSS版であるmozcを用いる。
+
+\subsubsection{設定ファイルの編集}
+
+/etc/locale.gen から en\_US.UTF-8, jp\_JP.UTF-8 UTF-8をアンコメントする。
+
+その後
+
+\begin{quote}
+\begin{verbatim}
+
+sudo locale-gen
+
+\end{verbatim}
+\end{quote}
+
+としてロケールを生成する。
+
+また、/etc/locale.conf に書き込む設定によってシステム全体の言語設定が変わる。
+
+例) LANG=en\_US.UTF-8, LANG=ja\_JP.UTF-8 
+
+
+書き換えた後には
+
+\begin{quote}
+\begin{verbatim}
+
+sudo localectl set-locale LANG=en_US.UTF-8
+
+\end{verbatim}
+\end{quote}
+
+\subsubsection{インプットメソッドのインストール}
+
+インプットメソッドには, fcitx-mozcを用いる。
+
+\begin{quote}
+\begin{verbatim}
+
+sudo pacman -S fcitx-im fcitx-mozc fcitx-configtool
+
+\end{verbatim}
+\end{quote}
+
+
+次に~/.pam\_environment ファイルを作成する。
+
+\begin{quote}
+\begin{verbatim}
+
+GTK_IM_MODULE DEFAULT=fcitx
+QT_IM_MODULE  DEFAULT=fcitx
+XMODIFIERS    DEFAULT=@im=fcitx
+
+\end{verbatim}
+\end{quote}
+
+
+\end{document}
