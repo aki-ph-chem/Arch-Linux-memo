@@ -1,0 +1,142 @@
+\documentclass[dvipdfmx]{jsarticle}
+\usepackage{url}
+\begin{document}
+
+\title{Arch Linuxの種々の設定}
+\author{aki}
+\maketitle
+
+\section{はじめに}
+
+デスクトップ環境を構築した後で必要になった種々の設定のメモのまとめ
+
+\section{サウンド}
+
+サウンドクライアントとしては　pulseaudioをインストールする
+
+\begin{quote}
+    \begin{verbatim}
+	$ sudo pacman -S pulseaudio
+    \end{verbatim}
+\end{quote}
+
+
+このままでは、GUIでの調整ができないためGUIのクライアントもインストールする。
+
+\begin{quote}
+    \begin{verbatim}
+	$ sudo pacman -S pavucontorol
+    \end{verbatim}
+\end{quote}
+
+\section{wifi設定}
+
+参考: 
+\begin{enumerate}
+    \item  \url{https://aznote.jakou.com/archlinux/wireless.html}
+    \item  \url{https://wiki.archlinux.jp/index.php/Netctl}
+\end{enumerate}
+
+      
+
+毎回wpa\_supplicantで手動でwifi接続をするのは骨が折れるのでnetctlを導入する。
+
+\section{netctl} 
+
+netctlのインストール
+  
+\begin{quote}
+    \begin{verbatim}
+	$ sudo pacman -S netctl
+    \end{verbatim}
+\end{quote}
+
+なお、依存パッケージとしてはdhcpcd, wpa\_supplicantが必要である。
+
+次に/etc/netctl/examples にあるサンプルから必要なものを選び 
+/etc/netctl/に適当な名前をつけてコピーする。たいていの場合wireless-wpaでok。
+
+次にそのファイルを開きInterface, ESSID, Key に書き込む。
+
+次にインターフェイスをdownする
+
+\begin{quote}
+    \begin{verbatim}
+$ sudo iplink set [interface-name] down
+    \end{verbatim}
+\end{quote}
+
+
+最後に
+
+\begin{quote}
+    \begin{verbatim}
+$ sudo netctl start [profile_name]
+    \end{verbatim}
+\end{quote}
+ 
+として接続する。
+
+切断する際には
+
+\begin{quote}
+    \begin{verbatim}
+$ sudo netctl stop [profile_name]
+    \end{verbatim}
+\end{quote}
+
+
+とする。
+
+自動接続
+
+\begin{quote}
+    \begin{verbatim}
+$ netctl enable [profile_name]
+    \end{verbatim}
+\end{quote}
+
+
+とすれば起動時にデーモンが起動する。
+
+
+
+\section{ブートローダー}
+
+参考
+
+\begin{enumerate}
+    \item \url{https://forum.manjaro.org/t/warning-os-prober-will-not-be-executed-to-detect-other-bootable-partitions/57849/2}
+    \item \url{https://h3poteto.hatenablog.com/entry/2021/03/20/234446}
+    \item \url{https://wiki.archlinux.jp/index.php/GRUB#.E3.83.87.E3.83.A5.E3.82.A2.E3.83.AB.E3.83.96.E3.83.BC.E3.83.88}
+\end{enumerate}
+
+
+os-proberでデュアルブート
+\begin{quote}
+    \begin{verbatim}
+$ sudo pacman -S os-prober
+    \end{verbatim}
+\end{quote}
+
+でos-proberをインストール。
+
+現在のバージョンではos-proberが動作しないように設定されているため、/etc/default/grubに
+
+\begin{quote}
+    \begin{verbatim}
+	GRUB_DISABLE_OS_PROBER=false
+    \end{verbatim}
+\end{quote}
+
+と追加して
+
+\begin{quote}
+    \begin{verbatim}
+$ sudo update-grub
+    \end{verbatim}
+\end{quote}
+
+とする
+
+\end{document}
