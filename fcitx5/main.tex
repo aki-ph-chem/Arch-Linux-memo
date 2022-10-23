@@ -1,0 +1,47 @@
+\documentclass[dvipdfmx]{jsarticle}
+
+\begin{document}
+\title{fcitxからfcitx5への移行}
+\author{aki}
+\thispagestyle{empty}
+\maketitle
+
+\section{はじめに}
+Arch Linuxのfcitxは現在メンテナンスモードでfcitx5への移行が推奨されている。
+以下ではfcitx5への移行に必要な作業を示す。
+
+\section{fcitxの削除}
+
+まずインストールされているfcitx関連のパッケージを確認する。
+
+\begin{quote}
+    \begin{verbatim}
+$ pacmam -Q | grep fcitx
+    \end{verbatim}
+\end{quote}
+
+自分の環境ではfcitx-mozcを使用しているので以下を削除する。
+
+\begin{quote}
+    \begin{verbatim}
+$ sudo pacman -Rs fcitx-mozc fcitx-configtool
+    \end{verbatim}
+\end{quote}
+
+\section{fcitx5のインストール}
+
+これまででfcitx5をインストールする準備ができたのでいよいよインストールしていく。
+
+\begin{quote}
+    \begin{verbatim}
+$ sudo pacman -S fcitx5-im fcitx5-mozc
+    \end{verbatim}
+\end{quote}
+
+現在自分が用いているxfce4ではインストールした時点で自動でfcitx5が起動するようになっていた。
+
+
+再起動後にfcitx5-configを開いてmozcを追加する。
+
+
+\end{document}
