@@ -1,0 +1,44 @@
+\documentclass[dvipdfmx]{jsarticle}
+
+\begin{document}
+\title{Linuxのキーマップ}
+\author{aki}
+\thispagestyle{empty}
+\maketitle
+
+\section{はじめに}
+自分のキーボードRK61は/を入力するのにFn + /を押さなければならず面倒であった。
+そこでxmodmapを用いて/のみで入力できるように変更した。
+
+\section{keycoceを調べる}
+
+まず、キーのkeycodeを調べる。ターミナルで
+
+\begin{quote}
+    \begin{verbatim}
+$ xev
+    \end{verbatim}
+\end{quote}
+
+として、特定のキーを押し表示されるkeycodeを読み取る。デフォルトでは読みにくいのでgrepを使って以下のようにするとわかりやすい。
+
+\begin{quote}
+    \begin{verbatim}
+$ xev | grep keycode
+    \end{verbatim}
+\end{quote}
+
+\section{キーを入れ替える}
+
+先程調べたkeycodeを用いて以下のように.bashrcに書き込む。
+
+\begin{quote}
+    \begin{verbatim}
+# Up <-> Slash
+xmodmap -e 'keycode 111 = slash '
+xmodmap -e 'keycode 61 = Up'
+    \end{verbatim}
+\end{quote}
+
+
+\end{document}
