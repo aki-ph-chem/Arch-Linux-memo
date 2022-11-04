@@ -40,5 +40,55 @@ xmodmap -e 'keycode 61 = Up'
     \end{verbatim}
 \end{quote}
 
+\section{本格版}
+
+.bashrcに直接書き込むより、.Xmodmapにkeymapの設定を書き込んで、.bashrcにxmod ~/.Xmodmapと書き込んだほうがよい。
+
+\subsection{追記:自分の使っているRK61について}
+
+keymapをいじって/?と矢印キーを入れ替えていたが、そもそも自分のRK61ではFn + Enterを押すと/?メインか矢印キーメインかを入れ替えられるのであんまいじらなくても良かった。
+
+
+\section{おまけ: 尊師スタイル}
+
+gccやgdbなどのコントリビューターとして有名で、GNUの創設者であるリチャードストルマンはラップトップpcにHHKBを乗っけて使っていた。
+かれは尊師として尊敬されているため、このスタイルを尊師スタイルという。
+
+
+まず、現在認識されているデバイス一覧を表示する。
+\begin{quote}
+    \begin{verbatim}
+$ xinput
+    \end{verbatim}
+\end{quote}
+
+内蔵キーボードは"AT Translated Set 2 keyboard"という名前のデバイスとして認識されている。
+なのでこれを無効化する。
+
+\begin{quote}
+    \begin{verbatim}
+$ xinput -disable "AT Translated Set 2 keyboard" 
+    \end{verbatim}
+\end{quote}
+
+やっぱり内蔵キーボードを使いたい場合では、もう一回有効化する。
+
+\begin{quote}
+    \begin{verbatim}
+$ xinput -enable "AT Translated Set 2 keyboard" 
+    \end{verbatim}
+\end{quote}
+
+入力内容が長くてめんどくさいので.bashrcにaliasとして書き込むと便利である。
+
+\begin{quote}
+    \begin{verbatim}
+# 内蔵キーボードの無効化
+alias diskey='xinput -disable "AT Translated Set 2 keyboard"' 
+# 内蔵キーボードの再有効化
+alias enkey='xinput -enable "AT Translated Set 2 keyboard"' 
+    \end{verbatim}
+\end{quote}
+
 
 \end{document}
